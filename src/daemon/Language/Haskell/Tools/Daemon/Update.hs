@@ -416,6 +416,7 @@ usePackageDB pkgDbLocs
        dfs' <- liftIO $ fmap fst $ initPackages
                  $ dfs { packageDBFlags = map (PackageDB . PkgConfFile) pkgDbLocs ++ packageDBFlags dfs
                        , pkgDatabase = Nothing
+                      --  , pluginModNames = pluginModNames dfs ++ [GHC.mkModuleName "RecordDotPreprocessor", GHC.mkModuleName "Data.Record.Anon.Plugin"]
                        }
        void $ setSessionDynFlags dfs'
 

@@ -68,6 +68,7 @@ trfType' = trfType'' where
   trfType'' pt@(HsTyLit {}) = AST.UTyPromoted <$> annContNoSema (trfPromoted' trfType' pt)
   trfType'' (HsWildCardTy _) = pure AST.UTyWildcard -- TODO: named wildcards
   trfType'' (HsSumTy _ types) = AST.UUnbSumType <$> trfAnnList " | " trfType' types
+  trfType'' (HsStarTy _ _) = pure AST.UTyWildcard -- TODO: named wildcards
   trfType'' t = unhandledElement "type" t
 
 trfBindings :: (TransformName n r, n ~ GhcPass p, HasCallStack) => [Located (HsTyVarBndr n)] -> Trf (AnnListG AST.UTyVar (Dom r) RangeStage)

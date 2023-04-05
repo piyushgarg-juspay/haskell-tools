@@ -211,3 +211,4 @@ translateExtension ExtensibleRecords = Nothing -- not in GHC
 translateExtension XmlSyntax = Nothing -- not in GHC
 translateExtension HereDocuments = Nothing -- not in GHC
 translateExtension RegularPatterns = Nothing -- not in GHC
+translateExtension _ = Nothing

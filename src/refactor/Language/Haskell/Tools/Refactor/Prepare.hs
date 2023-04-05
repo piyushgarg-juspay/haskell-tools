@@ -13,11 +13,13 @@ import Data.Maybe (Maybe(..), fromMaybe, fromJust)
 import Language.Haskell.TH.LanguageExtensions (Extension(..))
 import System.Directory (canonicalizePath)
 import System.FilePath
+import Outputable
 
 import CmdLineParser (CmdLineP(..), processArgs, Warn(..), Err(..))
 import DynFlags
 import FastString (mkFastString)
 import GHC hiding (loadModule, ModuleName)
+import Module (moduleNameFS, moduleNameString)
 import qualified GHC (loadModule)
 import GHC.Paths ( libdir )
 import GhcMonad
@@ -72,7 +74,7 @@ useFlags args = do
     $ liftIO $ putStrLn $ showSDocUnsafe $ cat $ map pprWarning warnings
   unless (null errs)
     $ liftIO $ putStrLn $ showSDocUnsafe $ cat $ map pprErr errs
-  void $ setSessionDynFlags newDynFlags
+  void $ setSessionDynFlags newDynFlags --  { pluginModNames = pluginModNames newDynFlags ++ [mkModuleName "Data.Record.Anon.Plugin", mkModuleName "RecordDotPreprocessor"]})
   when (any ("-package-db" `isSuffixOf`) args) reloadPkgDb
   return (map unLoc leftovers, snd . change)
 
@@ -91,7 +93,9 @@ initGhcFlags = initGhcFlags' False True
 initGhcFlagsForTest :: Ghc ()
 initGhcFlagsForTest = do initGhcFlags' True False
                          dfs <- getSessionDynFlags
-                         void $ setSessionDynFlags $ dfs { hscTarget = HscAsm }
+                         void $ setSessionDynFlags $ dfs { hscTarget = HscAsm
+                                                        --  , pluginModNames = pluginModNames dfs ++ [mkModuleName "Data.Record.Anon.Plugin", mkModuleName "RecordDotPreprocessor"]
+                                                          }
 
 -- | Sets up basic flags and settings for GHC
 initGhcFlags' :: Bool -> Bool -> Ghc ()
@@ -109,6 +113,7 @@ initGhcFlags' needsCodeGen errorsSuppressed = do
              , ghcLink = if needsCodeGen then LinkInMemory else NoLink
              , ghcMode = CompManager
              , packageFlags = ExposePackage "template-haskell" (PackageArg "template-haskell") (ModRenaming True []) : packageFlags dflags
+            --  , pluginModNames = pluginModNames dflags ++ [mkModuleName "Data.Record.Anon.Plugin", mkModuleName "RecordDotPreprocessor"]
              }
 
 -- | Use the given source directories when searching for imported modules
@@ -177,10 +182,16 @@ parseTyped modSum = withAlteredDynFlags (return . normalizeFlags) $ do
   let hasCppExtension = Cpp `xopt` ms_hspp_opts modSum
       ms = modSumNormalizeFlags modSum
   when (ApplicativeDo `xopt` ms_hspp_opts modSum) $ liftIO $ throwIO $ UnsupportedExtension "ApplicativeDo"
-  when (OverloadedLabels `xopt` ms_hspp_opts modSum) $ liftIO $ throwIO $ UnsupportedExtension "OverloadedLabels"
+  -- when (OverloadedLabels `xopt` ms_hspp_opts modSum) $ liftIO $ throwIO $ UnsupportedExtension "OverloadedLabels"
   when (ImplicitParams `xopt` ms_hspp_opts modSum) $ liftIO $ throwIO $ UnsupportedExtension "ImplicitParams"
+  dyn <- getSessionDynFlags
+  liftIO $ print $ "before parse: " ++ show (moduleNameFS <$> pluginModNames dyn) ++ " moduleName: " ++ (Module.moduleNameString $ moduleName $ ms_mod ms)
   p <- parseModule ms
+  liftIO $ print $ "after parse: " ++ (Module.moduleNameString $ moduleName $ ms_mod ms) ++ " dynflags: " ++ show (moduleNameFS <$> pluginModNames (ms_hspp_opts $ pm_mod_summary  p))
+  liftIO $ print $ "ast parse: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source p)
   tc <- typecheckModule p
+  -- liftIO $ print $ "ast parse: " ++ (showSDocUnsafe $ ppr $ pm_mod_summary tc)
+  -- liftIO $ print $ "ast parse: " ++ show tc
   void $ GHC.loadModule tc -- when used with loadModule, the module will be loaded twice
   let annots = pm_annotations p
   srcBuffer <- if hasCppExtension
