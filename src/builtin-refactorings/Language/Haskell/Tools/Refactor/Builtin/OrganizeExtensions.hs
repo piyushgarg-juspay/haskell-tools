@@ -120,10 +120,16 @@ collectTurnedOffExtensions = mapMaybe (toExt . drop 2)
                            . getExtensions
 
 -- | Collects the string representation of the extensions in the module
-getExtensions :: UnnamedModule -> [String]
-getExtensions = flip (^?) (filePragmas & annList & lpPragmas & annList & langExt)
+getExtensions' :: UnnamedModule -> [String]
+getExtensions' = flip (^?) (filePragmas & annList & lpPragmas & annList & langExt)
 
 toExt :: String -> Maybe Extension
 toExt str = case map fst . reads . canonExt . takeWhile isAlphaNum $ str of
               e:_ -> Just e
               []  -> fail $ "Extension '" ++ takeWhile isAlphaNum str ++ "' is not known."
+
+getDefaultExtensions :: [String]
+getDefaultExtensions = []
+
+getExtensions :: UnnamedModule -> [String]
+getExtensions mod = getExtensions' mod ++ getDefaultExtensions
