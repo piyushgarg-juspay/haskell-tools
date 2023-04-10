@@ -191,6 +191,9 @@ trfExpr' (ExplicitSum _ tag arity expr)
                        <*> makeList " | " (before AnnClose) (mapM makePlaceholder locsAfter)
   where makePlaceholder l = annLocNoSema (pure (srcLocSpan l)) (pure AST.UUnboxedSumPlaceHolder)
 trfExpr' (EWildPat _) = return AST.UHole
+-- trfExpr' t@(HsOverLabel _ _ u) = unhandledElement ("OverloadedLabel " ++ show u ++ " :::: ") t
+trfExpr' (HsOverLabel _ _ name) = AST.UVar <$> trfNameText (unpackFS name)
+-- trfExpr' (HsOverLabel _ (Just ip) name) = AST.UVar <$> trfNameText (unpackFS name)
 trfExpr' t = unhandledElement "expression" t
 
 trfFieldInits :: (TransformName n r, n ~ GhcPass p) => HsRecFields n (LHsExpr n) -> Trf (AnnListG AST.UFieldUpdate (Dom r) RangeStage)

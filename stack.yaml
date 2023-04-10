@@ -37,6 +37,9 @@ extra-deps:
   - text-1.2.5.0
   - parsec-3.1.14.0
   - http2-1.6.5@sha256:09a9e07d34fba12bd0b871c5fbce3708b2e16a9445b080885df6fd53b72858b3,14079
+  - lens-4.18.1
+  - record-dot-preprocessor-0.2.16
+  - record-hasfield-1.0
 
 #   - references-0.3.3.1@sha256:1f8e4568d345e5e1482d8c9fca9c48b6ca1b04db6b02edd1023a9c33a2b8a5a2,6446
   # - classyplate-0.3.4

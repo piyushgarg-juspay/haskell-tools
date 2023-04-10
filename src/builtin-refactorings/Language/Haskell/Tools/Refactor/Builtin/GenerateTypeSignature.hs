@@ -7,8 +7,8 @@
 {-# LANGUAGE ViewPatterns, LiberalTypeSynonyms #-}
 
 module Language.Haskell.Tools.Refactor.Builtin.GenerateTypeSignature
-  ( generateTypeSignature, generateTypeSignature', tryItOut
-  , generateTypeSignatureRefactoring) where
+  ( generateTypeSignature, generateTypeSignature', tryItOut, tryItOut'
+  , generateTypeSignatureRefactoring, generateTypeSignatureRefactoring') where
 
 import GHC hiding (Module)
 import Id as GHC
@@ -27,6 +27,8 @@ import Data.Maybe (Maybe(..), catMaybes)
 
 import Language.Haskell.Tools.Refactor as AST
 
+import Debug.Trace (trace, traceShowId)
+
 generateTypeSignatureRefactoring :: RefactoringChoice
 generateTypeSignatureRefactoring = SelectionRefactoring "GenerateSignature" (localRefactoring . generateTypeSignature')
 
@@ -35,6 +37,15 @@ tryItOut = tryRefactor (localRefactoring . generateTypeSignature')
 
 generateTypeSignature' :: RealSrcSpan -> LocalRefactoring
 generateTypeSignature' sp = generateTypeSignature (nodesContaining sp) (nodesContaining sp) (getValBindInList sp)
+
+generateTypeSignatureRefactoring' :: RefactoringChoice
+generateTypeSignatureRefactoring' = ModuleRefactoring "GenerateSignature_v2" (trace "It works!" $ localRefactoring  generateTypeSignature'') 
+
+tryItOut' :: String -> IO ()
+tryItOut' mod = trace "Run Custom TryItOut" $ tryRefactor (\_ -> localRefactoring generateTypeSignature'') mod ""
+
+generateTypeSignature'' :: LocalRefactoring
+generateTypeSignature'' = generateTypeSignature' $ readSrcSpan ""
 
 -- | Perform the refactoring on either local or top-level definition
 generateTypeSignature :: Simple Traversal Module DeclList

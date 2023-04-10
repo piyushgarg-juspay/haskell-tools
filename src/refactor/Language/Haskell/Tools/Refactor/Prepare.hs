@@ -37,6 +37,8 @@ import Language.Haskell.Tools.Refactor.Monad (Refactoring(..))
 import Language.Haskell.Tools.Refactor.Representation
 import Language.Haskell.Tools.Refactor.Utils.Monadic (runRefactor)
 
+import Debug.Trace (trace, traceShowId)
+
 -- | Type synonym for module names.
 type ModuleName = String
 
@@ -52,6 +54,18 @@ tryRefactor refact moduleName span
                $ refact $ correctRefactorSpan mod $ readSrcSpan span
       case res of Right r -> liftIO $ mapM_ (putStrLn . prettyPrint . snd . fromContentChanged) r
                   Left err -> liftIO $ putStrLn err
+
+-- tryRefactor' :: FilePath -> (RealSrcSpan -> Refactoring) -> String -> ModuleName -> IO ()
+-- tryRefactor' srcDir refact moduleName span
+--   = runGhc (Just libdir) $ do
+--       initGhcFlags
+--       useDirs [srcDir, "."]
+--       mod <- loadModule "." moduleName >>= parseTyped
+--       res <- runRefactor (SourceFileKey (moduleSourceFile moduleName) moduleName, mod) []
+--                $ refact $ correctRefactorSpan mod $ readSrcSpan span
+--       case res of Right r -> liftIO $ mapM_ (putStrLn . prettyPrint . snd . fromContentChanged) r
+--                   Left err -> liftIO $ putStrLn err
+
 
 -- | Adjust the source range to be applied to the refactored module
 correctRefactorSpan :: UnnamedModule -> RealSrcSpan -> RealSrcSpan

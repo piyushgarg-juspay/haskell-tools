@@ -6,12 +6,14 @@ import Language.Haskell.Tools.Refactor (RefactoringChoice, QueryChoice)
 import Language.Haskell.Tools.Refactor.Builtin.ExtractBinding (extractBindingRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.FloatOut (floatOutRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.GenerateExports (generateExportsRefactoring)
-import Language.Haskell.Tools.Refactor.Builtin.GenerateTypeSignature (generateTypeSignatureRefactoring)
+import Language.Haskell.Tools.Refactor.Builtin.GenerateTypeSignature (generateTypeSignatureRefactoring, generateTypeSignatureRefactoring')
 import Language.Haskell.Tools.Refactor.Builtin.InlineBinding (inlineBindingRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.OrganizeExtensions (organizeExtensionsRefactoring, projectOrganizeExtensionsRefactoring, highlightExtensionsQuery)
 import Language.Haskell.Tools.Refactor.Builtin.OrganizeImports (organizeImportsRefactoring, projectOrganizeImportsRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.RenameDefinition (renameDefinitionRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.GetMatches (getMatchesQuery)
+import Language.Haskell.Tools.Refactor.Builtin.EPNG (changeEpngTypeRefactoring)
+import Language.Haskell.Tools.Refactor.Builtin.DoPureReturnToLet (changePureToLetRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.AutoCorrect
 
 builtinRefactorings :: [RefactoringChoice]
@@ -27,6 +29,9 @@ builtinRefactorings
     , organizeExtensionsRefactoring
     , projectOrganizeExtensionsRefactoring
     , autoCorrectRefactoring
+    , generateTypeSignatureRefactoring'
+    , changeEpngTypeRefactoring
+    , changePureToLetRefactoring
     ]
 
 builtinQueries :: [QueryChoice]

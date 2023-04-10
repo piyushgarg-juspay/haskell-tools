@@ -307,6 +307,7 @@ data UDeriveStrategy dom stage
   = UStockStrategy
   | UAnyClassStrategy
   | UNewtypeStrategy
+  | UMultipleStrategy
 
 -- * Pattern synonyms
 

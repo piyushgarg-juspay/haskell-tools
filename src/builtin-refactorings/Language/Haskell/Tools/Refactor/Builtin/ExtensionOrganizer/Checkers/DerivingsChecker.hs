@@ -180,6 +180,7 @@ chkStrat :: DeriveStrategy -> CheckNode InstanceHead
 chkStrat (_element -> UStockStrategy)    = addStockExtension
 chkStrat (_element -> UNewtypeStrategy)  = addEvidence GeneralizedNewtypeDeriving
 chkStrat (_element -> UAnyClassStrategy) = addEvidence DeriveAnyClass
+chkStrat (_element -> UMultipleStrategy) = addEvidence DerivingStrategies
 
 chkDerivingClause :: CheckNode InstanceHead -> CheckNode Deriving
 chkDerivingClause checker d@(DerivingOne   x)  = checker x               >> return d

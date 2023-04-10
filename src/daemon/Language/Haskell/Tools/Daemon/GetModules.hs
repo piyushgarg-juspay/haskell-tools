@@ -37,12 +37,13 @@ import CmdLineParser
 
 import Language.Haskell.Tools.Daemon.MapExtensions (translateExtension, setExtensionFlag', unSetExtensionFlag')
 import Language.Haskell.Tools.Daemon.Representation
+import Debug.Trace (trace, traceShowId)
 
 -- | Gets all ModuleCollections from a list of source directories. It also orders the source directories that are package roots so that
 -- they can be loaded in the order they are defined (no backward imports). This matters in those cases because for them there can be
 -- special compilation flags.
 getAllModules :: [FilePath] -> IO [ModuleCollection ModuleNameStr]
-getAllModules pathes = orderMCs . concat <$> mapM getModules (map normalise pathes)
+getAllModules pathes = trace "Piyush :: Inside getAllModules" $ orderMCs . concat <$> mapM getModules (map normalise pathes)
 
 -- | Sorts model collection in an order to remove all backward references.
 -- Works because module collections defined by directories cannot be recursive.
@@ -61,9 +62,10 @@ orderMCs = sortBy compareMCs
 -- Only returns the non-boot haskell modules, the boot modules will be found during loading.
 getModules :: FilePath -> IO [ModuleCollection ModuleNameStr]
 getModules root
-  = do files <- listDirectory root
+  = do 
+       files <- trace "Piyush :: Inside getModules" $ listDirectory root
        case find (\p -> takeExtension p == ".cabal") files of
-          Just cabalFile -> modulesFromCabalFile root cabalFile
+          Just cabalFile -> trace "Piyush :: Inside getAllModules :: Use cabal file" $ modulesFromCabalFile root cabalFile
           Nothing        -> do mods <- modulesFromDirectory root root
                                return [ModuleCollection (DirectoryMC root) False root [root] [] (modKeys mods) return return []]
   where modKeys mods = Map.fromList $ map (, ModuleNotLoaded NoCodeGen True) mods
@@ -107,8 +109,8 @@ modulesFromCabalFile root cabal = (getModules . setupFlags <$> readGenericPackag
                                 (map (normalise . (root </>)) $ hsSourceDirs bi)
                                 (map (\(mn, fs) -> (moduleName mn, fs)) $ getModuleSourceFiles tmc)
                                 (Map.fromList $ map modRecord $ getModuleNames tmc)
-                                (flagsFromBuildInfo bi)
-                                (loadFlagsFromBuildInfo bi)
+                                (trace "Piyush :: Inside toModuleCollection :: FlagsFromBuildInfo" $ flagsFromBuildInfo bi)
+                                (trace "Piyush :: Inside toModuleCollection :: LoadFlagsFromBuildInfo" $ loadFlagsFromBuildInfo bi)
                                 (map (\(Dependency pkgName _ _) -> LibraryMC (unPackageName pkgName)) (targetBuildDepends bi))
                   else Nothing
           where modRecord mn = ( moduleName mn, ModuleNotLoaded NoCodeGen (needsToCompile tmc mn) )
@@ -234,7 +236,8 @@ loadFlagsFromBuildInfo bi@BuildInfo{ cppOptions } df
        return (setupLoadExtensions df')
   where setupLoadExtensions = foldl (.) id (map setExtensionFlag' $ catMaybes $ map translateExtension loadExtensions)
         loadExtensions = [PatternSynonyms | patternSynonymsNeeded] ++ [ExplicitNamespaces | explicitNamespacesNeeded]
-                           ++ [PackageImports | packageImportsNeeded] ++ [CPP | cppNeeded] ++ [MagicHash | magicHashNeeded]
+                           ++ [PackageImports | packageImportsNeeded] ++ [CPP | cppNeeded] 
+                           ++ [MagicHash | magicHashNeeded]
         explicitNamespacesNeeded = not $ null $ map EnableExtension [ExplicitNamespaces, TypeFamilies, TypeOperators] `intersect` usedExtensions bi
         patternSynonymsNeeded = EnableExtension PatternSynonyms `elem` usedExtensions bi
         packageImportsNeeded = EnableExtension PackageImports `elem` usedExtensions bi
@@ -246,14 +249,18 @@ loadFlagsFromBuildInfo bi@BuildInfo{ cppOptions } df
 flagsFromBuildInfo :: BuildInfo -> DynFlags -> IO DynFlags
 -- the import pathes are already set globally
 flagsFromBuildInfo bi@BuildInfo{ options } df
-  = do (df',unused,warnings) <- parseDynamicFlags df (map (L noSrcSpan) $ getOptions options)
-       mapM_ putStrLn (map (unLoc . warnMsg) warnings ++ map (("Flag is not used: " ++) . unLoc) unused)
-       return $ (flip lang_set (toGhcLang =<< defaultLanguage bi))
-         $ foldl (.) id (map (\case EnableExtension ext -> setEnabled True ext
-                                    DisableExtension ext -> setEnabled False ext
-                        ) (usedExtensions bi))
-         $ foldr (.) id (map (setEnabled True) (languageDefault (defaultLanguage bi)))
-         $ df'
+  = do 
+    (df',unused,warnings) <- parseDynamicFlags df (map (L noSrcSpan) $ getOptions options)
+    mapM_ putStrLn (map (unLoc . warnMsg) warnings ++ map (("Flag is not used: " ++) . unLoc) unused)
+
+    let res = (flip lang_set (toGhcLang =<< defaultLanguage bi))
+                  $ foldl (.) id (map (\case EnableExtension ext -> setEnabled True ext
+                                             DisableExtension ext -> setEnabled False ext
+                                  ) (usedExtensions bi))
+                  $ foldr (.) id (map (setEnabled True) (languageDefault (defaultLanguage bi)))
+                  $ df'
+    res1 <- return $ res { extensions = trace ("PiyushRes :: " ++ (show $ extensions res)) $ extensions res }
+    return $ res1 
   where toGhcLang Cabal.Haskell98 = Just GHC.Haskell98
         toGhcLang Cabal.Haskell2010 = Just GHC.Haskell2010
         toGhcLang _ = Nothing
