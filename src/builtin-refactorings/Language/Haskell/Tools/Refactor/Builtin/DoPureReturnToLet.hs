@@ -50,6 +50,9 @@ import qualified Language.Haskell.Tools.AST as AST
 
 import Control.Monad.IO.Class
 
+import Language.Haskell.Tools.Debug.RangeDebug
+import Language.Haskell.Tools.Debug.RangeDebugInstances
+
 -- import Language.Haskell.Tools.ASTDebug
 
 -- NOTE: When working on the entire AST, we should build a monad,
@@ -64,6 +67,8 @@ changePureToLetRefactoring = ModuleRefactoring "returnToLet" (localRefactoring c
 changePureToLet :: LocalRefactoring
 changePureToLet moduleAST =
         do
+            _ <- liftIO $ putStrLn $ srcInfoDebug $ moduleAST
+            -- _ <- liftIO $ demoRefactor "returnToLet" "/Users/piyush.garg/euler-hs-repos/haskell-tools-playground/src/app" [] "Test"
             -- let   newAST  = (.-) (modDecl & annList & declValBind & valBindRhs & rhsExpr & exprStmts & annList) (bindStmtToLetStmt) (moduleAST)
             --       newAST' = (.-) (modDecl & annList & declValBind & valBindLocals & annJust & localBinds & annList & localVal & valBindRhs & rhsExpr & exprStmts & annList) (bindStmtToLetStmt) (newAST)
             newAST <- liftGhc $ (!~) (modDecl & annList & declValBind & valBindRhs & rhsExpr & exprStmts & annList) (bindStmtToLetStmt) (moduleAST)

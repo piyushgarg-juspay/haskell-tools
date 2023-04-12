@@ -87,6 +87,11 @@ library
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.TraverseAST
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Instances.Checkable
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Instances.AppSelector
+                     , Language.Haskell.Tools.Debug
+                     , Language.Haskell.Tools.Debug.DebugGhcAST
+                     , Language.Haskell.Tools.Debug.Show
+                     , Language.Haskell.Tools.Debug.RangeDebug
+                     , Language.Haskell.Tools.Debug.RangeDebugInstances
 
   other-modules:       Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.ArrowsChecker
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.BangPatternsChecker
@@ -120,6 +125,7 @@ library
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.UndecidableInstancesChecker
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.ViewPatternsChecker
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Utils.GHCHelpers
+                   
 
 
   build-depends:       base                       
