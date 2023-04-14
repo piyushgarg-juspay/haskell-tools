@@ -214,4 +214,5 @@ translateExtension HereDocuments = Nothing -- not in GHC
 translateExtension RegularPatterns = Nothing -- not in GHC
 translateExtension DerivingStrategies = Just GHC.DerivingStrategies -- Available in GHC
 translateExtension BlockArguments = Just GHC.BlockArguments -- Available in GHC
+translateExtension EmptyDataDeriving = Just GHC.EmptyDataDeriving -- Available in GHC
 translateExtension _ = Nothing

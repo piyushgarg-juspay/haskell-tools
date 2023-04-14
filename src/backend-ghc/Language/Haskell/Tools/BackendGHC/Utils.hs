@@ -7,6 +7,9 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Language.Haskell.Tools.BackendGHC.Utils where
 
@@ -42,6 +45,12 @@ import Language.Haskell.Tools.AST.SemaInfoTypes as Sema
 import Language.Haskell.Tools.BackendGHC.GHCUtils
 import Language.Haskell.Tools.BackendGHC.Monad
 import Language.Haskell.Tools.BackendGHC.SourceMap
+
+import Debug.Trace (trace, traceShowId)
+import Outputable
+
+showOutputable :: (Outputable a) => a -> String
+showOutputable = showSDocUnsafe . ppr
 
 createModuleInfo :: ModSummary -> SrcSpan -> [LImportDecl n] -> Trf (Sema.ModuleInfo GhcRn)
 createModuleInfo mod nameLoc (filter (not . ideclImplicit . unLoc) -> imports) = do
@@ -104,17 +113,42 @@ createImportData (GHC.ImportDecl _ _ name pkg _ _ _ _ _ declHiding) =
 getDeps :: Module -> Ghc [Module]
 getDeps mod = do
   env <- GHC.getSession
-  eps <- liftIO $ hscEPS env
+  eps <- liftIO $ hscEPS env 
+  let defs = ["Crypto.PubKey.RSA"]
+  -- if (GHC.moduleNameString $ moduleName mod) `elem` defs 
+  --   then return [mod]
+  -- else do
+  !_  <- trace ("Current module in Parse :: " ++ (GHC.moduleNameString $ moduleName mod)) $ return ()
+  -- !_  <- liftIO $ putStrLn $ "Target dirs of Current Session :: " ++ (showOutputable $ hsc_targets env)
+  !_  <- liftIO $ putStrLn $ "Plugin Modules :: " ++ (showOutputable $ pluginModNames $ hsc_dflags env)
+  -- !_  <- liftIO $ putStrLn $ "Home Package Table :: " ++ (showSDocUnsafe $ pprHPT $ hsc_HPT env)
+  -- !_  <- liftIO $ putStrLn $ "External Package Table :: " ++ (showOutputable $ fmap moduleName $ moduleEnvKeys $ eps_PIT eps)
+  -- !_ <- trace ("GHC hscEps Env :: ") $  return eps
   case lookupIfaceByModule (hsc_dflags env) (hsc_HPT env) (eps_PIT eps) mod of
-    Just ifc -> (mod :) <$> mapM (liftIO . getModule env . fst) (dep_mods (mi_deps ifc))
+    Just ifc -> 
+      let !_ = trace ("External Package Table :: " ++ (showOutputable $ dep_pkgs $ mi_deps ifc)) ()
+        in 
+          (mod :) <$> mapM (liftIO . getModule env . fst) (dep_mods (mi_deps ifc))
     Nothing -> return [mod]
   where getModule env modName = do
           res <- findHomeModule env modName
+          -- !_ <- trace ("GHC res in findHomeModule :: " ++ show modName) $ return res 
           case res of Found _ m -> return m
+                      FoundMultiple _ -> error "Found in multiple packages"
                       _ -> case lookupPluginModuleWithSuggestions (hsc_dflags env) modName Nothing of
                              LookupFound m _ -> return m
                              LookupHidden hiddenPack hiddenMod -> return (head $ map fst hiddenMod ++ map fst hiddenPack)
-                             _ -> error $ "getDeps: module not found: " ++ GHC.moduleNameString modName
+                             LookupMultiple mlist -> getFromMultipleModules (map fst mlist) mod
+                             LookupUnusable _ -> error "Found in unusable packages in lookupPlugin"
+                             _ -> do 
+                                    -- !_ <- trace ("Current module in Parse :: " ++ (GHC.moduleNameString $ moduleName mod)) $ return ()                                    
+                                    -- !_ <- trace ("Deps Mods :: " ++ (fmap (showOutputable . fst) (dep_mods (mi_deps ifc)))) $ return ()
+                                    error $ "getDeps: module not found: " ++ GHC.moduleNameString modName
+
+getFromMultipleModules :: [Module] -> Module -> IO Module 
+getFromMultipleModules [] _ = error "getFromMultipleModules: module not found: "
+getFromMultipleModules (x:xs) mod = if moduleUnitId mod == moduleUnitId x then return x else getFromMultipleModules xs mod
+-- getFromMultipleModules (x:xs) mod = trace ("Module :: " ++ (showOutputable $ moduleUnitId x) ++ " Current :: " ++ (showOutputable $ moduleUnitId mod) ) $ getFromMultipleModules xs mod
 
 -- | Get names that are imported from a given import
 getImportedNames :: String -> Maybe String -> Trf (GHC.Module, [PName GhcRn])
