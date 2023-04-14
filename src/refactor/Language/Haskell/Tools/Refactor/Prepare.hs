@@ -27,6 +27,7 @@ import HscTypes
 import Outputable (Outputable(..), showSDocUnsafe, cat, (<>))
 import Packages (initPackages)
 import SrcLoc
+import HscMain
 import StringBuffer (hGetStringBuffer)
 
 import Language.Haskell.Tools.AST as AST
@@ -49,7 +50,9 @@ tryRefactor refact moduleName span
   = runGhc (Just libdir) $ do
       initGhcFlags
       useDirs ["."]
+      liftIO $ print "before refactor"
       mod <- loadModule "." moduleName >>= parseTyped
+      liftIO $ print "after refactor"
       res <- runRefactor (SourceFileKey (moduleSourceFile moduleName) moduleName, mod) []
                $ refact $ correctRefactorSpan mod $ readSrcSpan span
       case res of Right r -> liftIO $ mapM_ (putStrLn . prettyPrint . snd . fromContentChanged) r
@@ -200,17 +203,23 @@ parseTyped modSum = withAlteredDynFlags (return . normalizeFlags) $ do
   when (ImplicitParams `xopt` ms_hspp_opts modSum) $ liftIO $ throwIO $ UnsupportedExtension "ImplicitParams"
   dyn <- getSessionDynFlags
   liftIO $ print $ "before parse: " ++ show (moduleNameFS <$> pluginModNames dyn) ++ " moduleName: " ++ (Module.moduleNameString $ moduleName $ ms_mod ms)
+  --hs_env <- getSession
+  --v <- liftIO $ runHsc hs_env $ hscFileFrontEnd ms
+  --liftIO $ print "after hscFileFrontEnd"
   p <- parseModule ms
   liftIO $ print $ "after parse: " ++ (Module.moduleNameString $ moduleName $ ms_mod ms) ++ " dynflags: " ++ show (moduleNameFS <$> pluginModNames (ms_hspp_opts $ pm_mod_summary  p))
   liftIO $ print $ "ast parse: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source p)
   tc <- typecheckModule p
+  liftIO $ print $ "ast parse: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source p)
   -- liftIO $ print $ "ast parse: " ++ (showSDocUnsafe $ ppr $ pm_mod_summary tc)
   -- liftIO $ print $ "ast parse: " ++ show tc
   void $ GHC.loadModule tc -- when used with loadModule, the module will be loaded twice
+  liftIO $ print $ "ast parse: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source p)
   let annots = pm_annotations p
   srcBuffer <- if hasCppExtension
                     then liftIO $ hGetStringBuffer (getModSumOrig ms)
                     else return (fromJust $ ms_hspp_buf $ pm_mod_summary p)
+  liftIO $ print "after srcBuffer"
   withTempSession (\e -> e { hsc_dflags = ms_hspp_opts ms })
     $ (if hasCppExtension then prepareASTCpp else prepareAST) srcBuffer . placeComments (fst annots) (getNormalComments $ snd annots)
         <$> (addTypeInfos (typecheckedSource tc)

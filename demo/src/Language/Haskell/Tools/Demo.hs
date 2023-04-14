@@ -136,12 +136,14 @@ updateClient _ (PerformRefactoring "UpdateAST" modName _ _) = do
                 Nothing -> return $ Just $ ErrorMessage "The module is not found"
 updateClient _ (PerformRefactoring "TestErrorLogging" _ _ _) = error "This is a test"
 updateClient dir (PerformRefactoring refact modName selection args) = do
+    liftIO $ print "first perform"
     mod <- gets (find ((modName ==) . (\(_,m,_) -> m) . fst) . Map.assocs . (^. refSessMods))
     otherModules <- gets (filter ((modName /=) . (^. sfkModuleName) . fst) . map moduleNameAndContent . Map.assocs . (^. refSessMods))
 
     case mod of
       Just m ->
-        do res <- lift $ performCommand builtinRefactorings
+        do liftIO $ print "inside perform command"
+           res <- lift $ performCommand builtinRefactorings
                                         ([refact,selection] ++ args)
                                         (Right $ moduleNameAndContent m) otherModules
            case res of

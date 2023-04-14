@@ -160,7 +160,9 @@ updateClient' UpdateCtx{..} (PerformQuery query modPath selection args shutdown)
        return (not shutdown)
 
 updateClient' UpdateCtx{..} (PerformRefactoring refact modPath selection args shutdown diffMode)
-  = do (selectedMod, otherMods) <- getFileMods modPath
+  = do liftIO $ print $ "inside perform refactoring: " ++ modPath
+       (selectedMod, otherMods) <- getFileMods modPath
+       liftIO $ print "inside perform refactoring"
        performRefactoring (refact:selection:args)
                           (maybe (Left modPath) Right selectedMod) otherMods
        when shutdown $ liftIO $ response Disconnected

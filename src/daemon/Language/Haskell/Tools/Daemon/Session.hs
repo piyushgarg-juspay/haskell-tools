@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
 -- | Common operations for managing Daemon-tools sessions, for example loading whole packages or
@@ -6,6 +7,7 @@
 -- modules. Contains checks for compiling the modules to code when Template Haskell is used.
 module Language.Haskell.Tools.Daemon.Session where
 
+import Debug.Trace (trace)
 import Control.Monad.State.Strict
 import Control.Reference
 import Data.Function (on)
@@ -19,6 +21,7 @@ import System.FilePath
 
 import Digraph as GHC (flattenSCCs)
 import DynFlags (DynFlags(..), xopt)
+import DynamicLoading (initializePlugins)
 import Exception (gtry)
 import GHC
 import GHCi (purgeLookupSymbolCache)
@@ -142,9 +145,12 @@ getFileMods :: String -> DaemonSession ( Maybe (SourceFileKey, UnnamedModule)
                                        , [(SourceFileKey, UnnamedModule)] )
 getFileMods fnameOrModule = do
   modMaps <- gets (\st -> map (\x -> _mcModules x) (_refSessMCs st))
-  let modules = mapMaybe (\(k,m) -> (\ms tc -> (ms, (k,tc))) <$> (Just $ _modRecMS m) <*> (Just $ _typedRecModule m)) -- not type checkable modules are ignored
+  liftIO $ print modMaps
+  let modules = mapMaybe (\(k,m) -> case m of
+                                      ModuleTypeChecked tr mr _ -> (\ms tc -> (ms, (k,tc))) <$> (Just mr) <*> (Just tr) -- not type checkable modules are ignored
+                                      _ -> Nothing)
                   $ concatMap @[] Map.assocs modMaps
-      (modSel, modOthers) = List.partition (\(ms,_) -> getModSumName ms == fnameOrModule
+      (modSel, modOthers) = List.partition (\(ms,_) -> (trace (getModSumName ms) getModSumName ms) == fnameOrModule
                                                          && (case ms_hsc_src ms of HsSrcFile -> True; _ -> False))
                                           modules
       maxSufLength = maximum $ map sufLength modules
@@ -214,17 +220,21 @@ reloadModule report ms = do
   ghcfl <- gets (_ghcFlagsSet)
   let codeGen = needsGeneratedCode (keyFromMS ms) mcs
       mc = decideMC ms mcs
-  newm <- withFlagsForModule mc $ lift $ do
+  (ms', newm) <- withFlagsForModule mc $ lift $ do
     dfs <- liftIO $ fmap ghcfl $ _mcFlagSetup mc $ ms_hspp_opts ms
     let ms' = ms { ms_hspp_opts = dfs }
-    -- some flags are cached in mod summary, so we need to override
-    parseTyped (case codeGen of NoCodeGen -> ms'
+    let ms'' = (case codeGen of NoCodeGen -> ms'
                                 InterpretedCode -> forceCodeGen ms'
                                 GeneratedCode -> forceAsmGen ms')
+    hsc_env' <- getSession
+    dynflags' <- liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms''))
+    let modSum = ms'' { ms_hspp_opts = dynflags' }
+    -- some flags are cached in mod summary, so we need to override
+    (modSum, ) <$> parseTyped modSum
   -- replace the module in the program database
-  modify' (\st -> st{_refSessMCs = map (\x -> x{_mcModules = Map.insert (keyFromMS ms) (ModuleTypeChecked newm ms codeGen) (removeModuleMS ms $ _mcModules x)})
+  modify' (\st -> st{_refSessMCs = map (\x -> x{_mcModules = Map.insert (keyFromMS ms') (ModuleTypeChecked newm ms' codeGen) (removeModuleMS ms' $ _mcModules x)})
                                    $ filter (\c -> (_mcId c) == _mcId mc) (_refSessMCs st)})
-  liftIO $ report ms
+  liftIO $ report ms'
 
 -- | Select which module collection we think the module is in
 decideMC :: ModSummary -> [ModuleCollection SourceFileKey] -> ModuleCollection SourceFileKey
