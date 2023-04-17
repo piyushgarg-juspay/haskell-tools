@@ -118,16 +118,16 @@ getDeps mod = do
   -- if (GHC.moduleNameString $ moduleName mod) `elem` defs 
   --   then return [mod]
   -- else do
-  !_  <- trace ("Current module in Parse :: " ++ (GHC.moduleNameString $ moduleName mod)) $ return ()
+  -- !_  <- trace ("Current module in Parse :: " ++ (GHC.moduleNameString $ moduleName mod)) $ return ()
   -- !_  <- liftIO $ putStrLn $ "Target dirs of Current Session :: " ++ (showOutputable $ hsc_targets env)
-  !_  <- liftIO $ putStrLn $ "Plugin Modules :: " ++ (showOutputable $ pluginModNames $ hsc_dflags env)
+  -- !_  <- liftIO $ putStrLn $ "Plugin Modules :: " ++ (showOutputable $ pluginModNames $ hsc_dflags env)
   -- !_  <- liftIO $ putStrLn $ "Home Package Table :: " ++ (showSDocUnsafe $ pprHPT $ hsc_HPT env)
   -- !_  <- liftIO $ putStrLn $ "External Package Table :: " ++ (showOutputable $ fmap moduleName $ moduleEnvKeys $ eps_PIT eps)
   -- !_ <- trace ("GHC hscEps Env :: ") $  return eps
   case lookupIfaceByModule (hsc_dflags env) (hsc_HPT env) (eps_PIT eps) mod of
     Just ifc -> 
-      let !_ = trace ("External Package Table :: " ++ (showOutputable $ dep_pkgs $ mi_deps ifc)) ()
-        in 
+      -- let !_ = trace ("External Package Table :: " ++ (showOutputable $ dep_pkgs $ mi_deps ifc)) ()
+      --   in 
           (mod :) <$> mapM (liftIO . getModule env . fst) (dep_mods (mi_deps ifc))
     Nothing -> return [mod]
   where getModule env modName = do
