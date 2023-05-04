@@ -17,3 +17,4 @@ stackage-test-logs
 *.hidden
 *.todo
 *.notes
+.DS_Store

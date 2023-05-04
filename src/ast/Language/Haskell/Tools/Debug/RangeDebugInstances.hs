@@ -11,20 +11,39 @@ import Language.Haskell.Tools.Debug.RangeDebug
 import Control.Reference ((^.))
 import GHC.Generics (Generic(..))
 
+import Debug.Trace (trace)
+
 import Language.Haskell.Tools.AST
 
+
+-- instance {-# OVERLAPPING #-} (TreeDebug UExpr dom st, ShowSrcInfo st) => TreeDebug (Ann UExpr) dom st where
+--   treeDebug' i (Ann a e) = identLine i ++ show (a ^. sourceInfo) ++ " --->  " ++ (show e) ++ (treeDebug' (i+1) e)
+--   treeTraversal (Ann a e) = trace "HELLOWORLD" $ Ann a (treeTraversal e)
+
+-- instance {-# OVERLAPPING #-} (TreeDebug UExpr dom st, ShowSrcInfo st) => TreeDebug (AnnListG UExpr) dom st where
+--   treeDebug' i (AnnListG a ls) = identLine i ++ show (a ^. sourceInfo) ++ " <*>" ++ concatMap (treeDebug' (i + 1)) ls
+--   treeTraversal (AnnListG a ls) = trace "HELLOWORLD" $ AnnListG a $ map (treeTraversal) ls
+
+-- instance {-# OVERLAPPING #-} (TreeDebug UExpr dom st, ShowSrcInfo st) => TreeDebug (AnnMaybeG UExpr) dom st where
+--   treeDebug' i (AnnMaybeG a e) = identLine i ++ show (a ^. sourceInfo) ++ " <?>" ++ maybe "" (\e -> treeDebug' (i + 1) e) e
+--   treeTraversal (AnnMaybeG a e) = trace "HELLOWORLD" $ AnnMaybeG a $ maybe Nothing (\e -> Just $ treeTraversal e) e
+
+
 -- Annotations
-instance (TreeDebug e dom st, ShowSrcInfo st) => TreeDebug (Ann e) dom st where
-  treeDebug' i (Ann a e) = identLine i ++ show (a ^. sourceInfo) ++ " " ++ (show e) ++ treeDebug' (i+1) e
+instance {-# OVERLAPPABLE #-} (TreeDebug e dom st, ShowSrcInfo st) => TreeDebug (Ann e) dom st where
+  treeDebug' i (Ann a e) = identLine i ++ show (a ^. sourceInfo) ++ " --->  " ++ (show e) ++ (treeDebug' (i+1) e)
+  treeTraversal (Ann a e) = trace "OriginalWorld" $ Ann a (treeTraversal e)
 
 identLine :: Int -> String
 identLine i = "\n" ++ replicate (i*2) ' '
 
-instance (TreeDebug e dom st, ShowSrcInfo st) => TreeDebug (AnnListG e) dom st where
+instance {-# OVERLAPPABLE #-} (TreeDebug e dom st, ShowSrcInfo st) => TreeDebug (AnnListG e) dom st where
   treeDebug' i (AnnListG a ls) = identLine i ++ show (a ^. sourceInfo) ++ " <*>" ++ concatMap (treeDebug' (i + 1)) ls
+  treeTraversal (AnnListG a ls) = trace "OriginalWorld" $ AnnListG a $ map (treeTraversal) ls
 
-instance (TreeDebug e dom st, ShowSrcInfo st) => TreeDebug (AnnMaybeG e) dom st where
+instance {-# OVERLAPPABLE #-} (TreeDebug e dom st, ShowSrcInfo st) => TreeDebug (AnnMaybeG e) dom st where
   treeDebug' i (AnnMaybeG a e) = identLine i ++ show (a ^. sourceInfo) ++ " <?>" ++ maybe "" (\e -> treeDebug' (i + 1) e) e
+  treeTraversal (AnnMaybeG a e) = trace "OriginalWorld" $ AnnMaybeG a $ maybe Nothing (\e -> Just $ treeTraversal e) e
 
 -- Modules
 instance (ShowSrcInfo st, Domain dom) => TreeDebug UModule dom st
@@ -142,3 +161,4 @@ instance (ShowSrcInfo st, Domain dom) => TreeDebug LineNumber dom st
 instance (ShowSrcInfo st, Domain dom) => TreeDebug UPhaseControl dom st
 instance (ShowSrcInfo st, Domain dom) => TreeDebug PhaseNumber dom st
 instance (ShowSrcInfo st, Domain dom) => TreeDebug PhaseInvert dom st
+

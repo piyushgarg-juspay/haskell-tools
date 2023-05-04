@@ -93,6 +93,7 @@ serializeExt x = x
 translateExtension AllowAmbiguousTypes = Just GHC.AllowAmbiguousTypes
 translateExtension ApplicativeDo = Just GHC.ApplicativeDo
 translateExtension Arrows = Just GHC.Arrows
+translateExtension BlockArguments = Just GHC.BlockArguments
 translateExtension AutoDeriveTypeable = Just GHC.AutoDeriveTypeable
 translateExtension BangPatterns = Just GHC.BangPatterns
 translateExtension BinaryLiterals = Just GHC.BinaryLiterals

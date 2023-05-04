@@ -76,6 +76,12 @@ library
                      , Language.Haskell.Tools.Refactor.Builtin.ExtractBinding
                      , Language.Haskell.Tools.Refactor.Builtin.InlineBinding
                      , Language.Haskell.Tools.Refactor.Builtin.FloatOut
+                     , Language.Haskell.Tools.Refactor.Builtin.EPNG
+                     , Language.Haskell.Tools.Refactor.Builtin.ReturnToLet
+                     , Language.Haskell.Tools.Refactor.Builtin.FlowCtxt
+                     , Language.Haskell.Tools.Refactor.Builtin.Ref1
+                     , Language.Haskell.Tools.Refactor.Builtin.EPNG2
+                     , Language.Haskell.Tools.Refactor.Builtin.PrintTree
                      , Language.Haskell.Tools.Refactor.Builtin.GetMatches
                      , Language.Haskell.Tools.Refactor.Builtin.OrganizeExtensions
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers
