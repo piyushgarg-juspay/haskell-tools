@@ -74,13 +74,13 @@ changeContextType moduleAST =
             
 
 updateContextType :: Assertion -> Ghc Assertion 
-updateContextType assertion@(ClassAssert str typs) =
+updateContextType assertion@(ClassAssert str typs) = 
     do 
         let name = showName str 
         if name == "Transactionable" 
             then 
                 let newName = "MonadFlow"
-                    (AnnList newTyps) = typs
+                    (AnnList newTyps) = typs -- AnnListG ==> []
                 in return $ mkClassAssert (mkName newName) newTyps
             else return assertion
 updateContextType assertion = return assertion

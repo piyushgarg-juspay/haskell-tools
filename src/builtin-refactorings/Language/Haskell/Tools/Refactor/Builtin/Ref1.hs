@@ -107,7 +107,7 @@ checkAndUpdateFindOne expr@(InfixApp lhs' op' rhs') =
         then 
             let lhsNames = getAllNames lhs'
             in
-                if length lhsNames <= 2 && "findOne" `elem` lhsNames
+                if length lhsNames <= 2 && "findOne" `elem` lhsNames -- ESQ.findOne
                 then 
                     let newCall = "KVC.findWithKVConnector dbConf updatedMeshCfg " ++ checkAndUpdateWhere rhs'
                     in  return $ mkVar $ mkName $ newCall 
@@ -122,7 +122,7 @@ checkAndUpdateWhere expr =
         reqEqs = filter (\x -> length x > 0) changedEqs
         finalStr = foldr (\x r -> x ++ r) "" reqEqs
     in 
-        "[" ++ finalStr ++"]"
+        "[" ++ finalStr ++ "]"
 
 
 ref1Change'' :: Expr -> String

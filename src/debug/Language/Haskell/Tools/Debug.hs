@@ -36,6 +36,19 @@ import Language.Haskell.Tools.PrettyPrint (prettyPrint)
 import Language.Haskell.Tools.PrettyPrint.Prepare
 import Language.Haskell.Tools.Refactor
 import Language.Haskell.Tools.Refactor.Builtin (builtinRefactorings)
+import qualified Language.Haskell.GHC.ExactPrint as EP
+import Data.Either
+
+import System.IO.Strict as StrictIO (hGetContents)
+import Data.Algorithm.Diff (Diff(..), getGroupedDiff)
+import Data.Algorithm.DiffContext (prettyContextDiff, getContextDiff)
+import System.IO
+import System.Directory
+import Text.PrettyPrint as PP (text, render)
+
+
+replaceDotWithSlash :: String -> String
+replaceDotWithSlash s = foldr (\x r -> if x == '.' then '/':r else x:r) "" s  
 
 -- | Should be only used for testing
 demoRefactor :: String -> String -> [String] -> String -> IO ()
@@ -50,7 +63,9 @@ demoRefactor command workingDir args moduleName =
 
     p <- parseModule ms
     let annots = pm_annotations $ p
-    -- liftIO $ putStrLn $ show (pm_parsed_source p)
+    mp <- liftIO $ EP.parseModule (workingDir ++ replaceDotWithSlash moduleName ++ ".hs")
+    let mp' = rights [mp]
+    liftIO $ putStrLn $ foldr (\x r -> EP.exactPrint (snd x) (fst x) ++ r) "" mp'
     liftIO $ putStrLn "=========== tokens:"
     -- liftIO $ putStrLn $ show (fst annots)
     liftIO $ putStrLn "=========== comments:"
@@ -106,6 +121,8 @@ demoRefactor command workingDir args moduleName =
             liftIO $ putStrLn $ "=========== transformed & prettyprinted (" ++ (mod ^. sfkModuleName) ++ "):"
             let prettyPrinted = prettyPrint correctlyTransformed
             liftIO $ putStrLn prettyPrinted
+            liftIO $ putStrLn $ "=========== Write into file (" ++ (mod ^. sfkModuleName) ++ "):"
+            liftIO $ applyChanges correctlyTransformed mod workingDir
             liftIO $ putStrLn "==========="
           ModuleRemoved mod -> do
             liftIO $ putStrLn $ "=========== module removed: " ++ mod
@@ -119,6 +136,41 @@ demoRefactor command workingDir args moduleName =
         liftIO $ putStrLn "==========="
         liftIO $ putStrLn transformProblem
         liftIO $ putStrLn "==========="
+
+-- Function Apply Changes
+applyChanges cmod mod tdir = do
+          let m = cmod 
+              n = mod
+              diffMode = False
+          setCurrentDirectory tdir
+          let newCont = prettyPrint m
+              file = n ^. sfkFileName
+          origCont <- liftIO $ withBinaryFile file ReadMode $ \handle -> do
+            hSetEncoding handle utf8
+            StrictIO.hGetContents handle
+          let undo = createUndo 0 $ getGroupedDiff origCont newCont
+          let unifiedDiff = createUnifiedDiff file origCont newCont
+          when (not diffMode) $ do
+            liftIO $ withBinaryFile file WriteMode $ \handle -> do
+              hSetEncoding handle utf8
+              hPutStr handle newCont
+              hFlush handle
+          return ()
+
+-- | Creates a compressed set of changes in one file
+createUndo :: Eq a => Int -> [Diff [a]] -> [(Int, Int, [a])]
+createUndo i (Both str _ : rest) = createUndo (i + length str) rest
+createUndo i (First rem : Second add : rest)
+  = (i, i + length add, rem) : createUndo (i + length add) rest
+createUndo i (First rem : rest) = (i, i, rem) : createUndo i rest
+createUndo i (Second add : rest)
+  = (i, i + length add, []) : createUndo (i + length add) rest
+createUndo _ [] = []
+
+-- | Creates a unified-style diff of two texts. Only used when the user wants to know what would change.
+createUnifiedDiff :: FilePath -> String -> String -> String
+createUnifiedDiff name left right
+  = render $ prettyContextDiff (PP.text name) (PP.text name) PP.text $ getContextDiff 3 (lines left) (lines right)
 
 deriving instance Generic SrcSpan
 deriving instance Generic (NodeInfo sema src)
