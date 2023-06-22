@@ -45,6 +45,8 @@ import Language.Haskell.Tools.AST (Ann, AnnMaybeG, AnnListG, getRange, Dom, Rang
 import qualified Language.Haskell.Tools.AST as AST
 import Language.Haskell.Tools.AST.SemaInfoTypes as AST (nameInfo, mkNoSemanticInfo, trfImportInfo)
 
+import Debug.Trace (trace)
+
 trfDecls :: (TransformName n r, n ~ GhcPass p, HasCallStack) => [LHsDecl n] -> Trf (AnnListG AST.UDecl (Dom r) RangeStage)
 trfDecls decls = addToCurrentScope decls $ makeIndentedListNewlineBefore atTheEnd (mapM trfDecl decls)
 

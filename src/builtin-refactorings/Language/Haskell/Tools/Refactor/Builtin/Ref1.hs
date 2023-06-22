@@ -120,7 +120,7 @@ checkAndUpdateWhere expr =
     let allExprs :: [Expr] = expr ^? (biplateRef)
         changedEqs = fmap ref1Change'' allExprs
         reqEqs = filter (\x -> length x > 0) changedEqs
-        finalStr = foldr (\x r -> x ++ r) "" reqEqs
+        finalStr = foldr (\x r -> if r == "" then x ++ r else x ++ ", " ++ r) "" reqEqs
     in 
         "[" ++ finalStr ++ "]"
 

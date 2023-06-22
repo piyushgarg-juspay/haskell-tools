@@ -19,6 +19,7 @@ import Language.Haskell.Tools.Refactor.Builtin.PrintTree (printTreeRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.ReturnToLet (changePureToLetRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.FlowCtxt (changeContextTypeRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.Ref1 (ref1Refactoring)
+import Language.Haskell.Tools.Refactor.Builtin.AddMaybe (addMaybeRefactoring)
 
 builtinRefactorings :: [RefactoringChoice]
 builtinRefactorings
@@ -39,6 +40,7 @@ builtinRefactorings
     , changeEpngTypeRefactoring2
     , changePureToLetRefactoring
     , ref1Refactoring
+    , addMaybeRefactoring
     ]
 
 builtinQueries :: [QueryChoice]

@@ -30,6 +30,9 @@ data RefactoringChoice
   | ProjectRefactoring { refactoringName :: String
                        , projectRefactoring :: ProjectRefactoring
                        }
+  | GatewayRefactoring { refactoringName :: String
+                       , gatewayRefactoring :: [String] -> Refactoring
+                       }
 
 -- | Executes a given command (choosen from the set of available refactorings) on the selected
 -- module and given other modules.
@@ -55,6 +58,7 @@ performCommand refactorings (name:args) mod mods =
       (Just (SelectionRefactoring _ _), Right _, _)
         -> return $ Left $ "The refactoring '" ++ name ++ "' needs one argument: a source range"
       (Just (ModuleRefactoring _ trf), Right mod, _) -> runExceptT $ trf mod mods
+      (Just (GatewayRefactoring _ trf), Right mod, arg) -> runExceptT $ trf arg mod mods
       (Just (ProjectRefactoring _ trf), _, _) -> runExceptT $ trf mods
       (Just _, Left modPath, _)
         -> return $ Left $ "The following file is not loaded to Haskell-tools: " ++ modPath

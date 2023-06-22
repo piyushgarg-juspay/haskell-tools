@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Language.Haskell.Tools.BackendGHC.Utils where
 
@@ -42,6 +43,8 @@ import Language.Haskell.Tools.AST.SemaInfoTypes as Sema
 import Language.Haskell.Tools.BackendGHC.GHCUtils
 import Language.Haskell.Tools.BackendGHC.Monad
 import Language.Haskell.Tools.BackendGHC.SourceMap
+
+import Debug.Trace (trace, traceShowId)
 
 createModuleInfo :: ModSummary -> SrcSpan -> [LImportDecl n] -> Trf (Sema.ModuleInfo GhcRn)
 createModuleInfo mod nameLoc (filter (not . ideclImplicit . unLoc) -> imports) = do
@@ -303,6 +306,7 @@ betweenIfPresent firstTok lastTok = focusAfterIfPresent firstTok . focusBeforeIf
 focusAfter :: AnnKeywordId -> Trf a -> Trf a
 focusAfter firstTok trf
   = do firstToken <- tokenLoc firstTok
+      --  !_ <- trace ("In focus after, token = " ++ show firstTok ++ " , Location = " ++ show firstToken) $ return ()
        if (isGoodSrcSpan firstToken)
           then local (\s -> s { contRange = mkSrcSpan (srcSpanEnd firstToken) (srcSpanEnd (contRange s))}) trf
           else do rng <- asks contRange
@@ -356,7 +360,9 @@ atTheEnd = asks (srcSpanEnd . contRange)
 
 -- | Searches for a token inside the focus and retrieves its location
 tokenLoc :: AnnKeywordId -> Trf SrcSpan
-tokenLoc keyw = fromMaybe noSrcSpan <$> (getKeywordInside keyw <$> asks contRange <*> asks srcMap)
+tokenLoc keyw = do 
+  rng <- asks contRange
+  fromMaybe noSrcSpan <$> (getKeywordInside keyw <$> asks contRange <*> asks srcMap)
 
 allTokenLoc :: AnnKeywordId -> Trf [SrcSpan]
 allTokenLoc keyw = getKeywordsInside keyw <$> asks contRange <*> asks srcMap

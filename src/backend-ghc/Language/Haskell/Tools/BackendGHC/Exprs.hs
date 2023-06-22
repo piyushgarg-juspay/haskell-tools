@@ -36,6 +36,8 @@ import Language.Haskell.Tools.AST (Ann, AnnListG, Dom, RangeStage)
 import qualified Language.Haskell.Tools.AST as AST
 import Unsafe.Coerce (unsafeCoerce)
 
+import Debug.Trace (trace)
+
 trfExpr :: forall n r p . (TransformName n r, n ~ GhcPass p) => Located (HsExpr n) -> Trf (Ann AST.UExpr (Dom r) RangeStage)
 -- correction for empty cases
 trfExpr (L l cs@(HsCase _ expr (unLoc . mg_alts -> [])))

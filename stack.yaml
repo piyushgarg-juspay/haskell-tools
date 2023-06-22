@@ -15,6 +15,7 @@ packages:
   - src/cli
   - src/debug
   - src/daemon
+  - src/gateway
   - ../classyplate
 
 extra-deps:

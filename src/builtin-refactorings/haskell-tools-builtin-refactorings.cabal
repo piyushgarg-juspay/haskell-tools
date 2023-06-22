@@ -80,6 +80,7 @@ library
                      , Language.Haskell.Tools.Refactor.Builtin.ReturnToLet
                      , Language.Haskell.Tools.Refactor.Builtin.FlowCtxt
                      , Language.Haskell.Tools.Refactor.Builtin.Ref1
+                     , Language.Haskell.Tools.Refactor.Builtin.AddMaybe
                      , Language.Haskell.Tools.Refactor.Builtin.EPNG2
                      , Language.Haskell.Tools.Refactor.Builtin.PrintTree
                      , Language.Haskell.Tools.Refactor.Builtin.GetMatches

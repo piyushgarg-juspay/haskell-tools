@@ -169,7 +169,8 @@ loadModuleAST workingDir moduleName = do
 -- | Load the summary of a module given by the working directory and module name.
 loadModule :: FilePath -> ModuleName -> Ghc ModSummary
 loadModule workingDir moduleName
-  = do initGhcFlagsForTest
+  = do 
+       initGhcFlagsForTest
        useDirs [workingDir]
        target <- guessTarget moduleName Nothing
        setTargets [target]
@@ -197,6 +198,9 @@ parseTyped modSum = withAlteredDynFlags (return . normalizeFlags) $ do
   liftIO $ print $ "ast parse: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source p)
   tc <- typecheckModule p
   liftIO $ print $ "ast parse: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source p)
+
+  -- write expanded into file
+
   -- liftIO $ print $ "ast parse: " ++ (showSDocUnsafe $ ppr $ pm_mod_summary tc)
   -- liftIO $ print $ "ast parse: " ++ show tc
   void $ GHC.loadModule tc -- when used with loadModule, the module will be loaded twice

@@ -45,6 +45,7 @@ import Data.Algorithm.DiffContext (prettyContextDiff, getContextDiff)
 import System.IO
 import System.Directory
 import Text.PrettyPrint as PP (text, render)
+import DynamicLoading (initializePlugins)
 
 
 replaceDotWithSlash :: String -> String
@@ -56,16 +57,38 @@ demoRefactor command workingDir args moduleName =
   runGhc (Just libdir) $ do
     initGhcFlags
     _ <- useFlags args
-    useDirs [workingDir]
+    -- useDirs [workingDir]
+
+    flags <- getSessionDynFlags
+    liftIO $ print ("Import Paths :: " ++ (show $ importPaths flags))
+
+    liftIO $ print "Begin -- Pre-processing Stage 1 : Adding getField @ "
+    ms'' <- loadModule workingDir moduleName
+
+    liftIO $ print "TILL HERE WORKING"
+
+    hsc_env' <- getSession
+    dynflags' <- liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms''))
+    let modSum = modSumNormalizeFlags $ ms'' { ms_hspp_opts = dynflags' }
+
+    
+
+    p' <- parseModule modSum
+    let newCont = (showSDocUnsafe $ ppr $ pm_parsed_source p')
+    
+
+    liftIO $ print "Begin -- Actual Stage 2 : Disabling the RecordDotPreprocessor Plugin"
 
     liftIO $ putStrLn "=========== parsed source:"
     ms <- loadModule workingDir moduleName
 
     p <- parseModule ms
     let annots = pm_annotations $ p
-    mp <- liftIO $ EP.parseModule (workingDir ++ replaceDotWithSlash moduleName ++ ".hs")
-    let mp' = rights [mp]
-    liftIO $ putStrLn $ foldr (\x r -> EP.exactPrint (snd x) (fst x) ++ r) "" mp'
+    
+    -- mp <- liftIO $ EP.parseModule (workingDir ++ replaceDotWithSlash moduleName ++ ".hs")
+    -- let mp' = rights [mp]
+    -- liftIO $ putStrLn $ foldr (\x r -> EP.exactPrint (snd x) (fst x) ++ r) "" mp'
+    
     liftIO $ putStrLn "=========== tokens:"
     -- liftIO $ putStrLn $ show (fst annots)
     liftIO $ putStrLn "=========== comments:"
@@ -156,6 +179,16 @@ applyChanges cmod mod tdir = do
               hPutStr handle newCont
               hFlush handle
           return ()
+
+writeToFile tdir file str = do 
+  setCurrentDirectory tdir
+  liftIO $ withBinaryFile file WriteMode $ \handle -> do
+              hSetEncoding handle utf8
+              hPutStr handle str
+              hFlush handle
+  return ()
+
+-- call as ::  writeToFile workingDir moduleName _
 
 -- | Creates a compressed set of changes in one file
 createUndo :: Eq a => Int -> [Diff [a]] -> [(Int, Int, [a])]

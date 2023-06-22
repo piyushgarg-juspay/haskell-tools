@@ -37,6 +37,9 @@ import Language.Haskell.Tools.BackendGHC.Monad
 import Language.Haskell.Tools.BackendGHC.Names (TransformName, trfName)
 import Language.Haskell.Tools.BackendGHC.Utils
 
+import Debug.Trace (trace)
+import Outputable (ppr, showSDocUnsafe)
+
 -- Transformes a module in its renamed state. This will be performed to help the transformation of the actual typed module representation.
 trfModule :: ModSummary -> Located (HsModule GhcPs) -> Trf (Ann AST.UModule (Dom GhcPs) RangeStage)
 trfModule mod hsMod = do
@@ -82,7 +85,6 @@ trfModuleRename mod rangeMod (gr,imports,exps,_) hsMod
                          -> HsModule GhcPs -> Trf (AST.UModule (Dom GhcRn) RangeStage)
         trfModuleRename' preludeImports hsMod@(HsModule name exports _ _ deprec _) = do
           transformedImports <- orderAnnList <$> (trfImports imports)
-
           let importNames impd = ( impd ^. AST.importModule & AST.moduleNameString
                                  , impd ^? AST.importAs & AST.annJust & AST.importRename & AST.moduleNameString
                                  , AST.isAnnJust (impd ^. AST.importQualified)
@@ -91,8 +93,8 @@ trfModuleRename mod rangeMod (gr,imports,exps,_) hsMod
               importPrelude names = ( "Prelude", Nothing, False, names)
 
           addToScopeImported (map importNames (transformedImports ^? AST.annList) ++ [importPrelude preludeImports])
-            $ loadSplices hsMod
-            $ setOriginalNames originalNames . setDeclsToInsert roleAnnots
+            $ (loadSplices hsMod)
+            $ (setOriginalNames originalNames . setDeclsToInsert roleAnnots)
             $ do filePrags <- trfFilePragmas
                  AST.UModule filePrags
                   <$> trfModuleHead name
@@ -100,8 +102,8 @@ trfModuleRename mod rangeMod (gr,imports,exps,_) hsMod
                        (case (exports, exps) of (Just (L l _), Just ie) -> Just (L l (replaceSubspecLocs (orderLocated (map fst ie))))
                                                 _                       -> Nothing)
                        deprec
-                  <*> return transformedImports
-                  <*> trfDeclsGroup gr
+                  <*> (return transformedImports)
+                  <*> (trfDeclsGroup gr)
 
 -- | Extract the template haskell splices from the representation and adds them to the transformation state.
 loadSplices :: HsModule GhcPs -> Trf a -> Trf a
