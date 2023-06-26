@@ -83,6 +83,9 @@ import System.Directory (copyFile)
 
 import qualified Data.Aeson as Aeson
 
+import System.Environment (lookupEnv, getEnvironment)
+import Text.Read (readMaybe)
+
 
 type ModuleName = String
 type GhcS = StateT TypesState Ghc
@@ -221,7 +224,7 @@ demoRefactor command workingDir args gatewayName = do
     let (dataDecls :: [Decl]) = sourced ^? biplateRef
         (recTypes ::[(String, String)]) = foldr recTypesOnly [] dataDecls
         (recResTypes' :: [(String, String)]) = filter (\(typ, _) -> not (isInfixOf "req" typ || isInfixOf "Req" typ)) recTypes
-        (recResTypes'' :: [(String, String)]) = take 70 recResTypes'
+        (recResTypes'' :: [(String, String)]) = recResTypes'
 
     -- liftIO $ putStrLn $ "Record Types in File with Fields that are mandatory right now :: " ++ show recTypes
     liftIO $ putStrLn $ "Response Types in File with Fields that are mandatory right now :: " ++ show recResTypes''
@@ -233,11 +236,17 @@ demoRefactor command workingDir args gatewayName = do
     -- hsc_env <- getSession
     hsc_env_flags <- getSessionDynFlags
 
+    -- create temp directory
+    liftIO $ createDirectoryIfMissing False $ workingDir ++ "temp/"
+
     cachedFieldsMap <- liftIO $ getCachedFieldsMap gatewayName
     liftIO $ putStrLn $ show cachedFieldsMap
 
+    concurrentModules' <- liftIO $ lookupEnv "HT_GATEWAY_CON"
+    let concurrentModules = maybe (Just 5) (readMaybe) concurrentModules'
+
     -- Generate fieldsMap concurrently
-    (fieldsMap :: FieldsMap) <- liftIO $ concat <$> pooledForConcurrentlyN 5 recResTypes'' (\(typ, fld) -> do
+    (fieldsMap :: FieldsMap) <- liftIO $ concat <$> pooledForConcurrentlyN (fromJust concurrentModules) recResTypes'' (\(typ, fld) -> do
       -- Check if already cached result
       let (!isCached, !cacheRes) = isCachedField (typ, fld) cachedFieldsMap
       !_ <- liftIO $ putStrLn $ "Checked in cache"
@@ -246,11 +255,11 @@ demoRefactor command workingDir args gatewayName = do
         !_ <- putStrLn $ "Found in Cache " ++ show (typ, fld, cacheRes)
         return [(typ, fld, cacheRes)]
       else do 
-        !_ <- putStrLn $ "Not Found in Cache " ++ show (typ, fld, cacheRes)
+        !_ <- putStrLn $ "Not Found in Cache " ++ show (typ, fld)
 
         -- Create constants
-        let !modDir   = workingDir ++ "temp_" ++ typ ++ "_" ++ fld ++ "/"
-            !command  = "gw " ++ typ ++ " " ++ fld
+        let !command  = "gw " ++ typ ++ " " ++ fld
+            !modDir   = workingDir ++ "temp/temp_" ++ typ ++ "_" ++ fld ++ "/"
             !modFile1 = modDir ++ "Types.hs"
             !modFile2 = modDir ++ "Transforms.hs"
             !modFile3 = modDir ++ "Flow.hs"
@@ -259,33 +268,34 @@ demoRefactor command workingDir args gatewayName = do
             !mod3     = "Gateway." ++ gatewayName ++ ".Flow" 
 
         -- Created constants log
-        liftIO $ putStrLn $ "Done with creating constants for (" ++ show typ ++ ", " ++ show fld ++ ")"
+        liftIO $ putStrLn $ "Done with creating constants for " ++ show (typ, fld)
 
         -- create temp directory
         liftIO $ createDirectoryIfMissing False modDir
 
         -- Created Directory log
-        liftIO $ putStrLn $ "Done with creating temp directory for (" ++ show typ ++ ", " ++ show fld ++ ")"
+        liftIO $ putStrLn $ "Done with creating temp directory for " ++ show (typ, fld)
 
         -- copy files
-        liftIO $ copyFile (workingDir ++ "Types.hs") modFile1
+        liftIO $ copyFile (workingDir ++ "Types.hs")      modFile1
         liftIO $ copyFile (workingDir ++ "Transforms.hs") modFile2
-        liftIO $ copyFile (workingDir ++ "Flow.hs") modFile3
+        liftIO $ copyFile (workingDir ++ "Flow.hs")       modFile3
 
         -- Copy finish log
-        liftIO $ putStrLn $ "Done with copying the files for (" ++ show typ ++ ", " ++ show fld ++ ")"
+        liftIO $ putStrLn $ "Done with copying the files for " ++ show (typ, fld)
 
         -- run a separate GHC session
         !result <- liftIO $ runGhc (Just libdir) $ do 
           !_ <- initGhcFlagsForGateway' True False
           !_ <- useDirs [modDir]
           !_ <- useFlags args
+          !_ <- setTempFilesFlags True
           
           !oldFlags <- getSessionDynFlags
           !_ <- setSessionDynFlags $ setTmpDir modDir oldFlags
 
           -- Set session log
-          liftIO $ putStrLn $ "Done with setting up session for (" ++ show typ ++ ", " ++ show fld ++ ")"
+          liftIO $ putStrLn $ "Done with setting up session for " ++ show (typ, fld)
 
           setTargets []
           addGatewayModule modFile1 mod1
@@ -293,14 +303,14 @@ demoRefactor command workingDir args gatewayName = do
           addGatewayModule modFile3 mod3
 
           -- Set targets log
-          liftIO $ putStrLn $ "Done with setting up targets for (" ++ show typ ++ ", " ++ show fld ++ ")"
+          liftIO $ putStrLn $ "Done with setting up targets for " ++ show (typ, fld)
 
           !transformed <- performCommand builtinRefactorings (splitOn " " command)
                                           (Right ((SourceFileKey (moduleSourceFile mod1) mod1), sourced))
                                           []
 
           -- Tranform the module log
-          liftIO $ putStrLn $ "Done with transforming module for (" ++ show typ ++ ", " ++ show fld ++ ")"
+          liftIO $ putStrLn $ "Done with transforming module for " ++ show (typ, fld)
 
           case transformed of
             Right changes -> do
@@ -318,13 +328,13 @@ demoRefactor command workingDir args gatewayName = do
                   liftIO $ writeToFile modDir modFile1 newCont
 
                   -- Wrote transformed module log
-                  liftIO $ putStrLn $ "Done with writing transformed module for (" ++ show typ ++ ", " ++ show fld ++ ")"
+                  liftIO $ putStrLn $ "Done with writing transformed module for " ++ show (typ, fld)
                   
                   liftIO $ putStrLn $ "=========== Load All Targets (" ++ (mod ^. sfkModuleName) ++ "):"
                   loadAllTargets
 
                   -- Loaded targets log
-                  liftIO $ putStrLn $ "Done with loading all targets for (" ++ show typ ++ ", " ++ show fld ++ ")"
+                  liftIO $ putStrLn $ "Done with loading all targets for " ++ show (typ, fld)
 
                   liftIO $ putStrLn $ "=========== Validate Changes :"
                   res <- validateChanges [mod2, mod3] [modFile2, modFile3]
@@ -352,22 +362,22 @@ demoRefactor command workingDir args gatewayName = do
               return [(typ, fld, True)]
 
         -- Ran Typechecking log
-        liftIO $ putStrLn $ "Done with typechecking for (" ++ show typ ++ ", " ++ show fld ++ ")"
+        liftIO $ putStrLn $ "Done with typechecking for " ++ show (typ, fld)
 
         -- Delete temp directory
-        liftIO $ removeDirectoryRecursive modDir
+        -- liftIO $ removeDirectoryRecursive modDir
 
-        -- Ran Typechecking log
-        liftIO $ putStrLn $ "Done with deleting temp directory for (" ++ show typ ++ ", " ++ show fld ++ ")"
+        -- deleted directory log
+        -- liftIO $ putStrLn $ "Done with deleting temp directory for " ++ show (typ, fld)
 
         -- Log the result
         liftIO $ putStrLn $ "Whether used field (" ++ show typ ++ ", " ++ show fld ++ ") -> " ++ show result
 
         -- Update the cached fields result
-        liftIO $ updateCachedFieldsFile gatewayName result
+        liftIO $ updateCachedFieldsFile gatewayName result `catch` (\(e :: SomeException) -> putStrLn ("Exception during cacheUpdate :: " ++ show e))
 
         -- Updated cache log
-        liftIO $ putStrLn $ "Done with updating cache file for (" ++ show typ ++ ", " ++ show fld ++ ")"
+        liftIO $ putStrLn $ "Done with updating cache file for " ++ show (typ, fld)
 
         -- return result
         pure result 
@@ -384,6 +394,12 @@ demoRefactor command workingDir args gatewayName = do
     (diffMap :: DiffMap) <- pure $ getDistinguishableMap umod depMap fieldsMap
     liftIO $ putStrLn $ ""
     liftIO $ putStrLn $ "Distinguishable Map = " ++ show diffMap
+
+    -- Delete temp directory
+    liftIO $ removeDirectoryRecursive $ workingDir ++ "temp/"
+
+    -- deleted directory log
+    liftIO $ putStrLn $ "Done with deleting temp directory recursively"
 
     finalModule <- foldrM (\(typ, fld, isUsed) source -> do 
         if isUsed
@@ -600,6 +616,19 @@ initGhcFlagsForGateway = do
                          void $ setSessionDynFlags $ dfs { hscTarget = HscAsm
                                                         --  , pluginModNames = pluginModNames dfs ++ [mkModuleName "Data.Record.Anon.Plugin", mkModuleName "RecordDotPreprocessor"]
                                                           }
+
+setTempFilesFlags :: Bool -> Ghc ()
+setTempFilesFlags shouldSet = do 
+  dflags <- getSessionDynFlags
+  let setOrUnset = if shouldSet then gopt_set else gopt_unset
+  void $ setSessionDynFlags
+    $ flip setOrUnset Opt_KeepHcFiles
+    $ flip setOrUnset Opt_KeepHscppFiles
+    $ flip setOrUnset Opt_KeepSFiles
+    $ flip setOrUnset Opt_KeepTmpFiles
+    $ flip setOrUnset Opt_KeepHiFiles
+    $ flip setOrUnset Opt_KeepOFiles
+    $ dflags
 
 -- | Sets up basic flags and settings for GHC
 initGhcFlagsForGateway' :: Bool -> Bool -> Ghc ()
