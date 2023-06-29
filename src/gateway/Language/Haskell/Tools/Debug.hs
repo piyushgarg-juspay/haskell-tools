@@ -86,6 +86,7 @@ import qualified Data.Aeson as Aeson
 import System.Environment (lookupEnv, getEnvironment)
 import Text.Read (readMaybe)
 
+import System.Mem (performGC, performMajorGC, performMinorGC)
 
 type ModuleName = String
 type GhcS = StateT TypesState Ghc
@@ -108,6 +109,12 @@ demoRefactor command workingDir args gatewayName = do
     initGhcFlagsForGateway
     _ <- useDirs [workingDir]
     _ <- useFlags args
+    !_ <- setTempFilesFlags True
+
+    -- create temp directory & set temp directory
+    liftIO $ createDirectoryIfMissing False (workingDir ++ "/temp")
+    !oldFlags <- getSessionDynFlags
+    !_ <- setSessionDynFlags $ setTmpDir (workingDir ++ "/temp") oldFlags
 
     -- Create moduleNames for loading and fileNames for target
     let modFileNames = ["Types", "Transforms", "Flow"]
@@ -239,7 +246,7 @@ demoRefactor command workingDir args gatewayName = do
     -- create temp directory
     liftIO $ createDirectoryIfMissing False $ workingDir ++ "temp/"
 
-    cachedFieldsMap <- liftIO $ getCachedFieldsMap gatewayName
+    cachedFieldsMap <- liftIO $ getCachedFieldsMap workingDir gatewayName
     liftIO $ putStrLn $ show cachedFieldsMap
 
     concurrentModules' <- liftIO $ lookupEnv "HT_GATEWAY_CON"
@@ -374,10 +381,16 @@ demoRefactor command workingDir args gatewayName = do
         liftIO $ putStrLn $ "Whether used field (" ++ show typ ++ ", " ++ show fld ++ ") -> " ++ show result
 
         -- Update the cached fields result
-        liftIO $ updateCachedFieldsFile gatewayName result `catch` (\(e :: SomeException) -> putStrLn ("Exception during cacheUpdate :: " ++ show e))
+        liftIO $ updateCachedFieldsFile workingDir gatewayName result `catch` (\(e :: SomeException) -> putStrLn ("Exception during cacheUpdate :: " ++ show e))
 
         -- Updated cache log
         liftIO $ putStrLn $ "Done with updating cache file for " ++ show (typ, fld)
+
+        -- perform GC
+        -- !_ <- liftIO performGC
+
+        -- GC Done log
+        -- liftIO $ putStrLn $ "Done with performing GC for " ++ show (typ, fld)
 
         -- return result
         pure result 
@@ -403,12 +416,28 @@ demoRefactor command workingDir args gatewayName = do
 
     finalModule <- foldrM (\(typ, fld, isUsed) source -> do 
         if isUsed
-          then return source
-          else let command = "gw " ++ typ ++ " " ++ fld in applyMaybe source command moduleName -- apply refactoring
+          then (liftIO $ printLog "Used field : " (typ, fld)) >> return source
+        else if isDistinguishable typ diffMap
+          then let command = "gw " ++ typ ++ " " ++ fld in applyMaybe source command moduleName -- apply refactoring
+        else 
+          (liftIO $ printLog "Can't distinguish/decide from the type : " (typ, fld)) >> return source
       ) sourced fieldsMap 
     
     liftIO $ putStrLn $ prettyPrint finalModule
-      
+
+    -- Write finally to the file
+    liftIO $ writeToFile workingDir "Types.hs" $ prettyPrint finalModule
+
+    -- Wrote finally to file log
+    liftIO $ putStrLn $ "Done with writing the final modification"
+
+    -- perform GC
+    !_ <- liftIO performGC
+
+    -- GC Done log
+    liftIO $ putStrLn $ "Done with performing final GC"
+
+-- Function to Apply maybe refactoring over a particular type and field
 applyMaybe sourced command moduleName = do 
   transformed <- performCommand builtinRefactorings (splitOn " " command)
                                 (Right ((SourceFileKey (moduleSourceFile moduleName) moduleName), sourced))
@@ -519,9 +548,11 @@ isCachedField field@(typeName, fieldName) ((typeName', fieldName', res) : rem) =
     then (True, res)
     else isCachedField field rem
 
-getCachedFieldsMap :: String -> IO FieldsMap
-getCachedFieldsMap gatewayName = do 
-    cachedFieldsMapStr <- withBinaryFile ("/Users/piyush.garg/Desktop/CachedFields_" ++ gatewayName ++ ".txt") ReadWriteMode $ \handle -> do
+getCachedFieldsMap :: String -> String -> IO FieldsMap
+getCachedFieldsMap workingDir gatewayName = do 
+    filePath' <- lookupEnv "HT_GATEWAY_CACHE"
+    let filePath = fromMaybe workingDir filePath'
+    cachedFieldsMapStr <- withBinaryFile (filePath ++ "/CachedFields_" ++ gatewayName ++ ".txt") ReadWriteMode $ \handle -> do
                                                                             hSetEncoding handle utf8
                                                                             BS.hGetContents handle
     let (cachedFieldsMap :: FieldsMap) = case Aeson.decodeStrict (cachedFieldsMapStr) of
@@ -530,11 +561,13 @@ getCachedFieldsMap gatewayName = do
     return cachedFieldsMap           
 
 -- Update the fieldsMap in the file after updating the values if already exist
-updateCachedFieldsFile :: String -> FieldsMap -> IO ()
-updateCachedFieldsFile gatewayName fieldsMap = do 
-  cachedFieldsMap <- getCachedFieldsMap gatewayName
+updateCachedFieldsFile :: String -> String -> FieldsMap -> IO ()
+updateCachedFieldsFile workingDir gatewayName fieldsMap = do 
+  cachedFieldsMap <- getCachedFieldsMap workingDir gatewayName
   let updatedFieldsMap = updateFieldsMap cachedFieldsMap fieldsMap
-  withBinaryFile ("/Users/piyush.garg/Desktop/CachedFields_" ++ gatewayName ++ ".txt") WriteMode $ \handle -> do
+  filePath' <- lookupEnv "HT_GATEWAY_CACHE"
+  let filePath = fromMaybe workingDir filePath'
+  withBinaryFile (filePath ++ "/CachedFields_" ++ gatewayName ++ ".txt") WriteMode $ \handle -> do
                                                                             hSetEncoding handle utf8
                                                                             BSL.hPut handle (Aeson.encode updatedFieldsMap) 
 
@@ -795,6 +828,9 @@ addPluginFlags flags env = let dflags = hsc_dflags env in
 isUsedField :: (String, String, String) -> [(String, String, Bool)] -> Bool 
 isUsedField _ [] = False 
 isUsedField field@(typeName, fieldName, fieldType) ((typ, fld, res) : xs) = if typeName == typ && fieldName == fld then res else isUsedField field xs
+
+isDistinguishable :: String -> DiffMap -> Bool 
+isDistinguishable typ diffMap = fromMaybe True $ Map.lookup typ diffMap
 
 canDistinguish :: HT.Module -> FieldsMap -> String -> String -> DiffMap -> DiffMap
 canDistinguish source fieldsMap typeA typeB res = 

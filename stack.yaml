@@ -11,7 +11,7 @@ packages:
   - src/refactor
   - src/builtin-refactorings
   - src/experimental-refactorings
-  - demo
+  # - demo
   - src/cli
   - src/debug
   - src/daemon

@@ -30,3 +30,6 @@ makeBatches :: Int -> [a] -> [[a]]
 makeBatches lim ls 
   | length ls <= lim = [ls]
   | otherwise        = take lim ls : makeBatches lim (drop lim ls)
+
+printLog :: String -> (String, String) -> IO ()
+printLog heading typ = putStrLn $ "INFO_LOG :: " ++ heading ++ " ==> " ++ show typ
