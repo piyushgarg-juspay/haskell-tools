@@ -88,6 +88,8 @@ import Text.Read (readMaybe)
 
 import System.Mem (performGC, performMajorGC, performMinorGC)
 
+import Data.List (sort)
+
 type ModuleName = String
 type GhcS = StateT TypesState Ghc
 type ConNameMap = Map.Map String String
@@ -184,7 +186,7 @@ demoRefactor command workingDir args gatewayName = do
     -- liftIO $ putStrLn $ "General Flags :: " ++ (show $ toList $ generalFlags dflags) 
     -- error "stop"
     (rnSrc, tcSrc) <- ((\t -> (tm_renamed_source t, typecheckedSource t)) <$> typecheckModule p)
-                         `gcatch` \(_ :: SomeException) -> forcedTypecheck ms p
+                         `gcatch` \(e :: SomeException) -> trace ("Some exception : " ++ show e) $ forcedTypecheck ms p
     -- liftIO $ putStrLn $ show rnSrc
 
     liftIO $ putStrLn $ "++++++++++ Typecheck w/o Plugins Success"
@@ -228,10 +230,11 @@ demoRefactor command workingDir args gatewayName = do
     -- let prettyPrinted = prettyPrint sourced
     -- liftIO $ putStrLn prettyPrinted
 
-    let (dataDecls :: [Decl]) = sourced ^? biplateRef
+    let (dataDecls' :: [Decl]) = sourced ^? biplateRef
+        (dataDecls :: [Decl]) = filter filterDataDecls dataDecls'
         (recTypes ::[(String, String)]) = foldr recTypesOnly [] dataDecls
-        (recResTypes' :: [(String, String)]) = filter (\(typ, _) -> not (isInfixOf "req" typ || isInfixOf "Req" typ)) recTypes
-        (recResTypes'' :: [(String, String)]) = recResTypes'
+        (recResTypes' :: [(String, String)]) = recTypes
+        (recResTypes'' :: [(String, String)]) = take 1 recResTypes'
 
     -- liftIO $ putStrLn $ "Record Types in File with Fields that are mandatory right now :: " ++ show recTypes
     liftIO $ putStrLn $ "Response Types in File with Fields that are mandatory right now :: " ++ show recResTypes''
@@ -468,6 +471,23 @@ applyMaybe sourced command moduleName = do
       liftIO $ putStrLn transformProblem
       liftIO $ putStrLn "==========="
       return sourced
+
+
+filterDataDecls :: Decl -> Bool 
+filterDataDecls (DataDecl _ _ (NameDeclHead name) (AnnList [RecordConDecl _ fields]) _) = responseTypesOnly && notStandardResponse 
+  where 
+    responseTypesOnly = let typ = showName name in not (isInfixOf "req" typ || isInfixOf "Req" typ)
+    notStandardResponse = 
+      let (allFields :: [String]) = getFieldsList fields
+        in sort allFields == sort ["code", "status", "response"]
+filterDataDecls _ = False
+
+getFieldsList :: FieldDeclList -> [String]
+getFieldsList (AnnList ls) = foldr getFields [] ls
+  where 
+    getFields :: FieldDecl -> [String] -> [String]
+    getFields (FieldDecl (AnnList names) typ) r = fmap showName names ++ r
+    getOptionalFieldsFromList _ r = r 
 
 recTypesOnly :: Decl -> [(String, String)] -> [(String, String)]
 recTypesOnly (DataDecl _ _ (NameDeclHead name) (AnnList [RecordConDecl _ fields]) _) r = 

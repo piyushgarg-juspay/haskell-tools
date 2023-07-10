@@ -117,6 +117,7 @@ getDeps mod = do
                       _ -> case lookupPluginModuleWithSuggestions (hsc_dflags env) modName Nothing of
                              LookupFound m _ -> return m
                              LookupHidden hiddenPack hiddenMod -> return (head $ map fst hiddenMod ++ map fst hiddenPack)
+                             LookupMultiple ((m, _) : _) -> return m
                              _ -> error $ "getDeps: module not found: " ++ GHC.moduleNameString modName
 
 -- | Get names that are imported from a given import
