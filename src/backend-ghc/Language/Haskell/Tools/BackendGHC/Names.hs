@@ -17,7 +17,7 @@ import Data.List.Split (splitOn)
 import Data.Data (Data)
 
 import FastString as GHC (FastString, unpackFS)
-import HsSyn as GHC
+import GHC.Hs.ImpExp as GHC
 import Name as GHC (isSymOcc, occNameString)
 import qualified Name as GHC (Name)
 import OccName as GHC (HasOccName)

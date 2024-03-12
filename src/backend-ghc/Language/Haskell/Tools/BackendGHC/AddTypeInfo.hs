@@ -19,7 +19,7 @@ import TysWiredIn as GHC (anyTyCon)
 import UniqDFM as GHC (eltsUDFM)
 import UniqSupply as GHC (uniqFromSupply, mkSplitUniqSupply)
 import Var as GHC (Var(..))
-import HsExtension
+import GHC.Hs.Extension
 
 import Control.Applicative (Applicative(..), (<$>), Alternative(..))
 import Control.Exception (evaluate, throw)

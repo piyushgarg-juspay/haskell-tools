@@ -17,7 +17,7 @@ import HsTypes as GHC
 import Name as GHC (occNameString, nameOccName, isWiredInName)
 import RdrName as GHC (RdrName(..))
 import SrcLoc as GHC
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 import Outputable
 
 import Language.Haskell.Tools.AST (Ann, AnnMaybeG, Dom, RangeStage, HasNoSemanticInfo)

@@ -49,23 +49,23 @@ library
                      , Language.Haskell.Tools.Refactor.Querying
 
   build-depends:       base                       
-                     , aeson                     >= 1.0  && < 1.5
-                     , mtl                       >= 2.2  && < 2.3
-                     , uniplate                  >= 1.6  && < 1.7
-                     , ghc-paths                 >= 0.1  && < 0.2
-                     , containers                >= 0.5  && < 0.7
-                     , directory                 >= 1.2  && < 1.4
-                     , transformers              >= 0.5  && < 0.6
+                     , aeson                     >= 1.0  
+                     , mtl                       >= 2.2  
+                     , uniplate                  >= 1.6  
+                     , ghc-paths                 >= 0.1  
+                     , containers                >= 0.5  
+                     , directory                 >= 1.2  
+                     , transformers              >= 0.5  
                      , references                 
-                     , split                     >= 0.2  && < 0.3
-                     , filepath                  >= 1.4  && < 1.5
+                     , split                     >= 0.2  
+                     , filepath                  >= 1.4  
                      , template-haskell           
                      , ghc                        
                      , Cabal                      
-                     , haskell-tools-ast         >= 1.1  && < 1.2
+                     , haskell-tools-ast         >= 1.1  
                      , haskell-tools-backend-ghc
-                     , haskell-tools-rewrite     >= 1.1  && < 1.2
-                     , haskell-tools-prettyprint >= 1.1  && < 1.2
+                     , haskell-tools-rewrite     >= 1.1  
+                     , haskell-tools-prettyprint >= 1.1  
   default-language:    Haskell2010
 
 test-suite haskell-tools-builtin-refactorings-test
@@ -74,28 +74,28 @@ test-suite haskell-tools-builtin-refactorings-test
   hs-source-dirs:      test
   main-is:             Main.hs
   build-depends:       base                       
-                     , tasty                     >= 0.11 && < 1.2
-                     , tasty-hunit               >= 0.9  && < 0.11
-                     , transformers              >= 0.5  && < 0.6
+                     , tasty                     >= 0.11 
+                     , tasty-hunit               >= 0.9  
+                     , transformers              >= 0.5  
                      , either                    
-                     , filepath                  >= 1.4  && < 1.5
-                     , mtl                       >= 2.2  && < 2.3
-                     , uniplate                  >= 1.6  && < 1.7
-                     , containers                >= 0.5  && < 0.7
-                     , directory                 >= 1.2  && < 1.4
+                     , filepath                  >= 1.4  
+                     , mtl                       >= 2.2  
+                     , uniplate                  >= 1.6  
+                     , containers                >= 0.5  
+                     , directory                 >= 1.2  
                      , references                 
-                     , split                     >= 0.2  && < 0.3
-                     , time                      >= 1.8  && < 1.9
+                     , split                     >= 0.2  
+                     , time                      >= 1.8  
                      , template-haskell           
                      , ghc                        
-                     , ghc-paths                 >= 0.1  && < 0.2
+                     , ghc-paths                 >= 0.1  
                      , Cabal                      
-                     , haskell-tools-ast         >= 1.1  && < 1.2
+                     , haskell-tools-ast         >= 1.1  
                      , haskell-tools-backend-ghc
-                     , haskell-tools-rewrite     >= 1.1  && < 1.2
-                     , haskell-tools-prettyprint >= 1.1  && < 1.2
+                     , haskell-tools-rewrite     >= 1.1  
+                     , haskell-tools-prettyprint >= 1.1  
                      , haskell-tools-refactor
                      -- libraries used by the examples
-                     , old-time                  >= 1.1  && < 1.2
-                     , polyparse                 >= 1.12 && < 1.13
+                     , old-time                  >= 1.1  
+                     , polyparse                 >= 1.12 
   default-language:    Haskell2010

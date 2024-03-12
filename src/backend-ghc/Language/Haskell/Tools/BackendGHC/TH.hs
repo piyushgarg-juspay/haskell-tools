@@ -8,7 +8,7 @@ import ApiAnnotation as GHC (AnnKeywordId(..))
 import FastString as GHC (unpackFS)
 import HsExpr as GHC (HsSplice(..), HsExpr(..), HsBracket(..))
 import SrcLoc as GHC
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 
 import Language.Haskell.Tools.BackendGHC.Decls (trfDecls, trfDeclsGroup)
 import Language.Haskell.Tools.BackendGHC.Exprs (trfExpr, createScopeInfo)

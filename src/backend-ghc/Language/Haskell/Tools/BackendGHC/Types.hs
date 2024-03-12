@@ -11,7 +11,7 @@ import ApiAnnotation as GHC (AnnKeywordId(..))
 import HsExpr (HsSplice(..))
 import HsTypes as GHC
 import SrcLoc as GHC
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 
 import Control.Applicative (Applicative(..), (<$>), Alternative(..))
 import Control.Monad.Reader.Class (asks)

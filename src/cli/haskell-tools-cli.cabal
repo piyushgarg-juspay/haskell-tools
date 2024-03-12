@@ -17,18 +17,18 @@ extra-source-files: examples/example-project/*.hs
 
 library
   build-depends:       base                       
-                     , containers                >= 0.5 && < 0.7
-                     , mtl                       >= 2.2 && < 2.3
-                     , split                     >= 0.2 && < 0.3
-                     , directory                 >= 1.2 && < 1.4
-                     , filepath                  >= 1.4 && < 2
+                     , containers                >= 0.5 
+                     , mtl                       >= 2.2 
+                     , split                     >= 0.2 
+                     , directory                 >= 1.2 
+                     , filepath                  >= 1.4 
                      , ghc                       
-                     , ghc-paths                 >= 0.1 && < 0.2
-                     , references                >= 0.3 && < 0.4
-                     , strict                    >= 0.3 && < 0.4
-                     , haskell-tools-refactor    >= 1.1 && < 1.2
-                     , haskell-tools-builtin-refactorings >= 1.1 && < 1.2
-                     , haskell-tools-daemon      >= 1.1 && < 1.2
+                     , ghc-paths                 >= 0.1 
+                     , references                >= 0.3 
+                     , strict                    >= 0.3 
+                     , haskell-tools-refactor    >= 1.1 
+                     , haskell-tools-builtin-refactorings >= 1.1 
+                     , haskell-tools-daemon      >= 1.1 
   exposed-modules:     Language.Haskell.Tools.Refactor.CLI
                      , Paths_haskell_tools_cli
   default-language:    Haskell2010
@@ -37,14 +37,14 @@ library
 executable ht-refact
   ghc-options:         -rtsopts
   build-depends:       base                       
-                     , split                     >= 0.2 && < 0.3
-                     , mtl                       >= 2.2 && < 2.3
-                     , directory                 >= 1.2  && < 1.4
-                     , filepath                  >= 1.4  && < 2.0
+                     , split                     >= 0.2 
+                     , mtl                       >= 2.2 
+                     , directory                 >= 1.2  
+                     , filepath                  >= 1.4  
                      , optparse-applicative      
                      , haskell-tools-cli
-                     , haskell-tools-daemon      >= 1.1 && < 1.2
-                     , haskell-tools-builtin-refactorings >= 1.1 && < 1.2
+                     , haskell-tools-daemon      >= 1.1 
+                     , haskell-tools-builtin-refactorings >= 1.1 
   hs-source-dirs:      exe
   main-is:             Main.hs
   default-language:    Haskell2010
@@ -55,24 +55,24 @@ test-suite haskell-tools-cli-tests
   hs-source-dirs:      test
   main-is:             Main.hs
   build-depends:       base                       
-                     , tasty                     >= 0.11 && < 1.2
-                     , tasty-hunit               >= 0.9 && < 0.11
-                     , directory                 >= 1.2 && < 1.4
-                     , filepath                  >= 1.4 && < 2.0
-                     , knob                      >= 0.1 && < 0.2
-                     , bytestring                >= 0.10 && < 0.11
+                     , tasty                     >= 0.11 
+                     , tasty-hunit               >= 0.9 
+                     , directory                 >= 1.2 
+                     , filepath                  >= 1.4 
+                     , knob                      >= 0.1 
+                     , bytestring                >= 0.10 
                      , haskell-tools-cli
-                     , haskell-tools-builtin-refactorings >= 1.1 && < 1.2
+                     , haskell-tools-builtin-refactorings >= 1.1 
   default-language:    Haskell2010
 
 executable ht-test-stackage
   build-depends:       base                       
-                     , directory                 >= 1.2 && < 1.4
-                     , process                   >= 1.6 && < 1.7
-                     , split                     >= 0.2 && < 0.3
-                     , filepath                  >= 1.4 && < 2.0
+                     , directory                 >= 1.2 
+                     , process                   >= 1.6 
+                     , split                     >= 0.2 
+                     , filepath                  >= 1.4 
                      , optparse-applicative      
-                     , Glob                      >= 0.9 && < 0.10
+                     , Glob                      >= 0.9 
   ghc-options:         -threaded
   hs-source-dirs:      test-stackage
   main-is:             Main.hs
@@ -82,17 +82,17 @@ benchmark cli-benchmark
   type:                exitcode-stdio-1.0
   ghc-options:         -with-rtsopts=-M2g
   build-depends:       base                       
-                     , criterion                 >= 1.1 && < 1.6
-                     , time                      >= 1.6 && < 1.9
-                     , aeson                     >= 1.0 && < 1.5
-                     , directory                 >= 1.2 && < 1.4
-                     , filepath                  >= 1.4 && < 2.0
-                     , knob                      >= 0.1 && < 0.2
-                     , bytestring                >= 0.10 && < 0.11
-                     , split                     >= 0.2 && < 0.3
+                     , criterion                 >= 1.1 
+                     , time                      >= 1.6 
+                     , aeson                     >= 1.0 
+                     , directory                 >= 1.2 
+                     , filepath                  >= 1.4 
+                     , knob                      >= 0.1 
+                     , bytestring                >= 0.10 
+                     , split                     >= 0.2 
                      , haskell-tools-cli
-                     , haskell-tools-builtin-refactorings >= 1.1 && < 1.2
-                     , haskell-tools-daemon      >= 1.1 && < 1.2
+                     , haskell-tools-builtin-refactorings >= 1.1 
+                     , haskell-tools-daemon      >= 1.1 
   hs-source-dirs:      benchmark
   main-is:             Main.hs
   default-language:    Haskell2010

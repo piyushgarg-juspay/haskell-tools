@@ -12,7 +12,7 @@ import ApiAnnotation as GHC (AnnKeywordId(..))
 import HsExpr as GHC
 import Outputable (Outputable)
 import SrcLoc as GHC
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 
 import Language.Haskell.Tools.AST (Ann, AnnListG, Dom, RangeStage)
 import qualified Language.Haskell.Tools.AST as AST

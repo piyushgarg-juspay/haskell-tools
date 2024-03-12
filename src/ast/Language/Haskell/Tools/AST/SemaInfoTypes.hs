@@ -38,7 +38,7 @@ import SrcLoc as GHC
 import Type as GHC
 import HscTypes as GHC
 import CoAxiom as GHC
-import HsExtension (IdP)
+import GHC.Hs.Extension (IdP)
 
 import Data.Data as Data
 import Control.Reference

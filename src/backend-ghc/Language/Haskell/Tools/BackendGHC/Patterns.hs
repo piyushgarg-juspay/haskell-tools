@@ -18,7 +18,7 @@ import HsTypes as GHC (HsConDetails(..), hswc_body, hsib_body)
 import Language.Haskell.Tools.BackendGHC.GHCUtils (getFieldOccName)
 import SrcLoc as GHC
 import Control.Monad.Reader
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 import HsPat
 
 import {-# SOURCE #-} Language.Haskell.Tools.BackendGHC.Exprs (trfExpr)

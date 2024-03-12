@@ -19,7 +19,7 @@ import HsTypes as GHC (SrcStrictness(..), HsWildCardBndrs(..), HsImplicitBndrs(.
 import Name as GHC (isSymOcc)
 import PlaceHolder as GHC (NameOrRdrName)
 import SrcLoc as GHC
-import HsExtension (GhcPass, IdP)
+import GHC.Hs.Extension (GhcPass, IdP)
 
 import Control.Monad.Reader (Monad(..), mapM, asks)
 import Data.List

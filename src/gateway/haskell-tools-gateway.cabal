@@ -47,6 +47,8 @@ library
                      , aeson
                      , bytestring
                      , unliftio
+                     , syb
+                     , ghc-boot
   default-language:    Haskell2010
 
 executable ht-gateway

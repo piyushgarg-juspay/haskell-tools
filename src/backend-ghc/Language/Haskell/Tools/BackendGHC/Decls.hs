@@ -15,13 +15,13 @@ import BooleanFormula as GHC (BooleanFormula(..))
 import Class as GHC (FunDep)
 import ForeignCall as GHC (Safety(..), CExportSpec(..), CCallConv(..))
 import qualified GHC
-import HsSyn as GHC
+import GHC.Hs.ImpExp as GHC
 import Name as GHC (Name, occNameString, nameOccName, isSymOcc)
 import Outputable as GHC (Outputable(..), showSDocUnsafe)
 import RdrName as GHC (RdrName, rdrNameOcc)
 import SrcLoc as GHC
 import TyCon as GHC (Role(..))
-import HsExtension (GhcPass, NoExt(..))
+import GHC.Hs.Extension (GhcPass, NoExt(..))
 
 import Control.Monad.Reader
 import Control.Reference
